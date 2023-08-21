@@ -12,7 +12,7 @@ for fun in funs:
     print(fun)
     fun()
 
-print('======')
+print('---')
 
 
 
