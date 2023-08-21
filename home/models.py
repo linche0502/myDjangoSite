@@ -30,14 +30,19 @@ class GammingRooms():
     emptyRoomChecking= None
     
     def newRoom(self, creator_id, p1_name):
-        newRoom= Gamming()
+        newRoom= Gamming(creator_id, p1_name)
         newRoom.room_id= id(newRoom)
         self.rooms.append(newRoom)
         return id(newRoom)
+    @staticmethod
     def getRoom(self, room_id):
         return  ctypes.cast(room_id, ctypes.py_object).value
-    def getRooms(self):
-        return  self.rooms
+    @staticmethod
+    def getRooms(self, col='*'):
+        if col == '*':
+            return  self.rooms
+        return [getattr(roomObj, col,'') for roomObj in self.rooms]
+    @staticmethod
     def delRoom(self, room_id):
         if room_id in self.rooms:
             self.rooms.remove(self.getRoom(room_id))

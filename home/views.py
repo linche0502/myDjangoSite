@@ -35,16 +35,20 @@ def bikachu(request):
 
 
 def connBikachuRooms(request):
-    gammingRooms= GammingRooms()
-    if request.GET.get('get_user_id'):
+    # 剛進入畫面時，獲得user_id和room_id
+    if request.GET.get('get_id'):
         while True:
             new_id= random.randint(10000000)
-            if new_id not in gammingRooms.getRooms():
-                newRoom= gammingRooms.newRoom(new_id, request.GET.get('userName',''))
-                return new_id
+            if new_id not in GammingRooms.getRooms(col='creator_id'):
+                new_room_id= GammingRooms.newRoom(new_id, request.GET.get('userName',''))
+                return HttpResponse(json.dumps({'user_id':new_id, 'room_id':new_room_id}))
     if request.GET.get('update'):
-        
-        return HttpResponse('{}')
+        my_room_id= request.GET.get('my_room_id')
+        if my_room_id:
+            my_room= GammingRooms.getRoom(my_room_id)
+            
+            return HttpResponse('{}')
+    
     
     return render(request, 'bickchuRoom.html')
 

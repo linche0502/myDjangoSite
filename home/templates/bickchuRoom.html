@@ -8,10 +8,11 @@
     var userName = getCookie('userName', { specChar: true });
     // 建立遊戲ID(唯一值，每次進入都會不同)
     var user_id;
-    // 自己創立的房間的狀態(未建立/已建立/人滿/按下開始: null/[userName,'']/[userName,p2Name]/'start')
+    // 自己創立的房間的狀態(未建立/已建立/人滿/按下開始: null/[[user_id,userName],'']/[[user_id,userName],[p2_user_id,p2Name]]/'start')
     var my_room_status= null;
     // 自己創立的房間的room_id
     var my_room_id;
+    var rooms= [];
     var other_room_join= false;
     
     onDOMContentLoaded(() => {
@@ -27,11 +28,19 @@
             }
         });
         
-        // 獲取本次的user_id
+        // 獲取本次登入的user_id及room_id
         if(!user_id){
-            fetch(thisUrl+ '?'+ new URLSearchParams({'get_user_id':true, 'userName':userName})).then(response => response.text()).then(response => {
-                user_id= response;
-            });
+            function get_id(){
+                fetch(thisUrl+ '?'+ new URLSearchParams({'get_id':true, 'userName':userName})).then(response => response.text()).then(response => {
+                    user_id= response;
+                    var data= JSON.parse(response);
+                    user_id= data['user_id'] || '';
+                    room_id= data['room_id'] || '';
+                }).catch(e => {
+                    get_id();
+                })
+            }
+            get_id();
         }
         
         // 建立房間
@@ -40,7 +49,7 @@
         document.querySelector('#create_room').addEventListener('click', () => {
             newRoom.hidden= false;
             newRoom_p1.value= userName;
-            my_room_status= [userName,''];
+            my_room_status= [[user_id,userName],''];
         });
         // 取消建立房間
         document.querySelector('#create_room_cancel').addEventListener('click', () => {
@@ -49,23 +58,24 @@
             newRoom_p2.value= '';
             my_room_status= null;
         });
-        // 交換p1,p2位置
+        // 交換(自己房間的)p1,p2位置
         newRoom_p1.addEventListener('click', () => {
             if(newRoom_p1.value=='' && newRoom_p2.value==userName){
                 [newRoom_p1.value,newRoom_p2.value]= [userName, ''];
-                my_room_status= [userName,''];
+                my_room_status= [[user_id,userName], ''];
             }
         });
         newRoom_p2.addEventListener('click', () => {
             if(newRoom_p2.value=='' && newRoom_p1.value==userName){
                 [newRoom_p1.value,newRoom_p2.value]= ['', userName];
-                my_room_status= ['', userName];
+                my_room_status= ['', [user_id,userName]];
             }
         });
-        // 開始遊戲
+        // 自己按下(自己房間的)開始遊戲
         document.querySelector('#create_room_start').addEventListener('click', () => {
             my_room_status= 'start';
         })
+        
         
         
     });
@@ -73,7 +83,7 @@
     
     // 每秒檢查更新
     setInterval(() => {
-        var params= { 'update':true, 'my_room_status':my_room_status, 'other_room_join':other_room_join };
+        var params= { 'update':true, 'my_room_id':my_room_id, 'my_room_status':my_room_status, 'other_room_join':other_room_join };
         fetch(thisUrl+ '?'+ new URLSearchParams(params)).then(response => response.text()).then(response => {
             var data= JSON.parse(response);
             // 檢查所有房間
@@ -83,7 +93,9 @@
             }
             // 檢查自己創立的的房間
             
-        });
+        }).catch(e => {
+            console.log('等待連線中...')
+        })
     }, 1000);
 
 </script>
