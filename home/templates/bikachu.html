@@ -1,0 +1,260 @@
+{% extends "base.html" %}
+
+
+
+{% block head %}
+{{ block.super }}
+<script>
+    const freshTime= 10;
+    // 不使用JSON, 而是使用 position= Object.assign({}, startPosition); 的話, 原始資料會莫名被改變
+    const startPosition= '{"p1":[15,0], "p2":[85,0], "ball":[15,60]}';
+    var position= JSON.parse(startPosition);
+    // var position= {'p1':[15,0], 'p2':[85,0], 'ball':[15,60]};
+    var limitLR= {'p1':[0,50], 'p2':[50,100], 'ball':[0,100]};
+    var netWidth = 0;
+    const startSpeed= '{"p1":[0,0], "p2":[0,0], "ball":[0,0]}';
+    var speed= JSON.parse(startSpeed);
+    // var speed= {'p1':[0,0], 'p2':[0,0], 'ball':[0,0]};
+    var keys= {'p1':{"up":0, "left":0, "right":0, "down":0, "spike":0}, 'p2':{"up":0, "left":0, "right":0, "down":0, "spike":0, 'computerSpile':0}};
+    var computerMode= false;
+    var computerPredictPoint= 0;
+    var computerspikeRate= 0.6;
+    var computerJumpRate= 0.8;
+    var movementSpeed= 40;
+    var jumpSpeed= 80;
+    var regularHitSpeed= 125;
+    var spikeSpeed= 175;
+    var spikePoint= [50, 28];
+    var gravity= 200;
+    var gamePlaying= false;
+    var lastGameWinner;
+    var scores= {'p1':0, 'p2':0};
+    
+    // 校正刷新率帶來的影響
+    movementSpeed/= 1000/freshTime;
+    jumpSpeed/= 1000/freshTime;
+    regularHitSpeed/= 1000/freshTime;
+    spikeSpeed/= 1000/freshTime;
+    gravity/= Math.pow(1000/freshTime, 2);
+    
+    // 按鍵(動作)儲存函數
+    function actionInput(keyCode, io){
+        if(keyCode == 87){ keys['p1']['up']= io; }                              // w
+        if(keyCode == 65){ keys['p1']['left']= io; }                            // a
+        if(keyCode == 68){ keys['p1']['right']= io; }                           // s
+        if(keyCode == 83){ keys['p1']['down']= io; }                            // d
+        if(keyCode == 32){ keys['p1']['spike']= io; }                           // ' '
+        if(keyCode == 38){ keys['p2']['up']= io; setComputerMode(false); }      // ^
+        if(keyCode == 37){ keys['p2']['left']= io; setComputerMode(false); }    // <
+        if(keyCode == 39){ keys['p2']['right']= io; setComputerMode(false); }   // >
+        if(keyCode == 40){ keys['p2']['down']= io; setComputerMode(false); }    // v
+        if(keyCode == 13){ keys['p2']['spike']= io; setComputerMode(false); }   // Enter
+    }
+    // 動作輸入
+    document.addEventListener("keydown", e => {
+        actionInput(e.keyCode, 1);
+    });
+    document.addEventListener("keyup", e => {
+        actionInput(e.keyCode, 0);
+    });
+    
+    // 設定最左.右位置的範圍
+    window.addEventListener("load", () => {
+        netWidth= document.querySelector('#net').width / (window.innerWidth*0.9) * 100;
+        limitLR= {'p1':[0,50-netWidth-5], 'p2':[50+netWidth+5,100], 'ball':[0,100]};
+    });
+    // 設定位置函數
+    function setPosition(){
+        Object.entries(position).forEach(([obj,value]) => {
+            // 最左.右位置
+            if(position[obj][0] < limitLR[obj][0]){ position[obj][0]= limitLR[obj][0]}
+            if(position[obj][0] > limitLR[obj][1]){ position[obj][0]= limitLR[obj][1]}
+            document.querySelector(`#${obj}`).style.left = `calc(90vw * ${value[0]} / 100)`;
+            // 最低位置為0 (地板)
+            if(value[1] < 0){ position[obj][1]= 0; };
+            document.querySelector(`#${obj}`).style.bottom = `calc(${position[obj][1]}vh)`;
+        });
+        // 設定結束條件
+        if(position['ball'][1]<=0 && gamePlaying){
+            gameOver();
+        }
+    }
+    
+    // 計算速度並設定位置
+    function setSpeed(){
+        Object.entries(speed).forEach(([obj,value]) => {
+            // 在空中時, 要加上重力加速度
+            if(position[obj][1] > 0){ speed[obj][1]-= gravity; }
+            else{ speed[obj][1]= 0;}
+            // 操作部分影響到的速度
+            if(obj=='p1' || obj=='p2'){
+                speed[obj][0]= 0;
+                if(keys[obj]['left']){ speed[obj][0]-= movementSpeed;}
+                if(keys[obj]['right']){ speed[obj][0]+= movementSpeed;}
+                if(keys[obj]['up'] && position[obj][1]==0){ speed[obj][1]+= jumpSpeed;}
+            }else if(obj == 'ball'){
+                // 碰撞改變球的速度
+                ['p1','p2'].forEach(player => {
+                    // player和ball有相交時`, 先計算球的總速度，在計算彈出去的角度，以及在x.y軸上的速度分量
+                    if(Math.abs(position[player][0]-position['ball'][0])<=10 && Math.abs(position[player][1]-position['ball'][1])<=10){
+                        var V= (keys[player]['down']||keys[player]['spike']||keys[player]['computerSpike'])? spikeSpeed : regularHitSpeed;
+                        var angle= (keys[player]['down']||keys[player]['spike']||keys[player]['computerSpike']) ? Math.atan2(spikePoint[1]-position['ball'][1], spikePoint[0]-position['ball'][0]) : Math.atan2(position['ball'][1]-position[player][1], position['ball'][0]-position[player][0]);
+                        speed['ball']= [V*Math.cos(angle), V*Math.sin(angle)];
+                        upDateComputerPredictPoint();
+                    }
+                })
+                // 觸網時，如果高於網子就依照與網子頂端(50,25)的角度回彈, 如果低於網子則單純以左右相反的速度回去
+                if(position['ball'][0]>=45 && position['ball'][0]<=55 && position['ball'][1]<=25){
+                    // 確認球是不是在網子頂部
+                    if(position['ball'][1]>=20 || position['ball'][1]>=20+speed['ball'][1]){
+                        var V= Math.sqrt(Math.pow(speed['ball'][0], 2) + Math.pow(speed['ball'][1], 2));
+                        var angle= Math.atan2(position['ball'][1]-20, position['ball'][0]-50);
+                        speed['ball']= [V * Math.cos(angle), V * Math.sin(angle)];
+                    }
+                    else{
+                        speed['ball'][0]*= -1;
+                    }
+                    upDateComputerPredictPoint();
+                }
+                // 撞到左右牆壁時，就單純以左右相反的速度會去
+                if (position['ball'][0] <= 0 || position['ball'][0] >= 100) {
+                    speed['ball'][0] *= -1;
+                    upDateComputerPredictPoint();
+                }
+            }
+            
+            // 電腦模式時
+            if(computerMode && obj=='p2'){
+                // 如果球很接近電腦自己頭上, 且位置高度適中, 且球速不快, 按照設定的機率決定要不要跳
+                if(Math.abs(position['ball'][0]-position['p2'][0]) <= 10
+                    && position['ball'][1]-position['p2'][1] > 20
+                    && position['ball'][1]-position['p2'][1] <= 50
+                    && Math.abs(speed['ball'][0]) <= 30
+                    && Math.random() <= computerJumpRate/(1000/freshTime)
+                    && position['p2'][1]==0
+                    ){ speed['p2'][1]+= jumpSpeed; }
+                // 有跳起來時, 按照設定的機率來決定是否扣球
+                if(position['p2'][1]==jumpSpeed && Math.random()<=computerspikeRate){ keys['p2']['computerSpike']=1; }
+                else if(position['p2'][1]==0){ keys['p2']['computerSpike']=0; }
+                // 如果預測落點不在p2場區，則回到開始位置
+                if (computerPredictPoint < 50){ computerPredictPoint=85; }
+                // 往落點的方向移動
+                if (computerPredictPoint-position['p2'][0] < movementSpeed*-1) { speed['p2'][0] = movementSpeed * -1; }
+                if (computerPredictPoint-position['p2'][0] > movementSpeed) { speed['p2'][0] = movementSpeed; }
+            }
+            // 更新位置 (要在遊戲中才會改變位置)
+            if(gamePlaying){
+                position[obj][0]+= speed[obj][0];
+                position[obj][1]+= speed[obj][1];
+            }
+        });
+        setPosition();
+    }
+    
+    // 電腦模式
+    function setComputerMode(IO){
+        if(IO === undefined){
+            computerMode= !computerMode;
+        }else{
+            computerMode= IO;
+        }
+        if(!computerMode){ keys['p2']['computerSpike']=0; }
+        document.querySelector("#computerModeSign").hidden= !computerMode;
+    }
+    document.addEventListener("keyup", (e) => {
+        if(e.keyCode == 80){    //'p'
+            setComputerMode();
+        }
+    });
+    function upDateComputerPredictPoint(){
+        // 先計算落地需要多少時間, 再以此推斷落地時的位置
+        // S= Vot + 1/2gt^2     ->           ->      t= -V +- (V^2 + 4*2g*S)^1/2  / g    
+        // 1/2g*t^2 + Vot - S = 0
+        // x= -b+-(b^2-4ac)^1/2  / 2a
+        // t= -Vo +- v/ (Vo^2 +2gS) / g     (-)號不合
+        var fallingTime= (function (Vy,y){ return (Vy + Math.sqrt(Math.pow(Vy,2) - 2*gravity*-1*y)) / gravity })(speed['ball'][1],position['ball'][1]-10);
+        // 改用迴圈計算
+        // var fallingTime= (function (Vy,y){ 
+        //     var secLater= 0;
+        //     while(y > 8+Vy){ y+=Vy; Vy-=gravity; secLater+=1; }
+        //     secLater+= Math.abs(y/Vy);
+        //     return secLater;
+        //  })(speed['ball'][1],position['ball'][1]);
+        computerPredictPoint= position['ball'][0]+ (speed['ball'][0]*fallingTime);
+        // 加一點亂數隨機進去
+        computerPredictPoint+= (Math.random()*7.5 - 2.5);
+        // 如果預測的落點會超出螢幕外, 校正出撞牆反彈後的位置
+        while(computerPredictPoint<0 || computerPredictPoint >100){
+            if(computerPredictPoint < 0){ computerPredictPoint*= -1; }
+            if(computerPredictPoint > 100){ computerPredictPoint= 100- (computerPredictPoint-100) }
+        }
+    }
+    
+    // 顯示訊息
+    function setMessage(msg){
+        document.querySelector("#messageRow").textContent= msg;
+    }
+    // 遊戲流程(1 round)
+    function gameSet(){
+        // 遊戲位置初始化, 若上一局是p2贏, 則球要出現在p2那一側
+        position= JSON.parse(startPosition);
+        // position= {'p1':[15,0], 'p2':[85,0], 'ball':[15,60]};
+        if(lastGameWinner == 'p2'){
+            position['ball'][0]= 85
+            computerPredictPoint= 85-(Math.random()*5);
+        };
+        setPosition();
+        
+        setTimeout(() => { setMessage('3'); }, 1);
+        setTimeout(() => { setMessage('2'); }, 1000);
+        setTimeout(() => { setMessage('1'); }, 2000);
+        setTimeout(() => {
+            // 顯示'start!', 並在1秒後消失
+            setMessage('start!');
+            setTimeout(() => { setMessage(''); }, 1000);
+            gamePlaying= true;
+            // 倒數結束後，遊戲速度初始化
+            speed= JSON.parse(startSpeed);
+            // speed= {'p1':[0,0], 'p2':[0,0], 'ball':[0,0]};
+            gamePlaying= setInterval(() => {
+                setSpeed();
+            }, freshTime)
+        }, 3000);
+    }
+    // 遊戲結束函數
+    function gameOver(){
+        clearInterval(gamePlaying);
+        gamePlaying= null;
+        if(position['ball'][0] < 50){
+            lastGameWinner= 'p2';
+            scores['p2']+= 1;
+            setMessage('p2 Win!');
+            document.querySelector("#p2Score").textContent= scores['p2'];
+        }else{
+            lastGameWinner= 'p1';
+            scores['p1']+= 1;
+            setMessage('p1 Win!');
+            document.querySelector("#p1Score").textContent= scores['p1'];
+        }
+        setTimeout(gameSet, 2000);
+    }
+    
+    document.addEventListener("DOMContentLoaded", () => {
+        setPosition();
+        gameSet();
+    });
+</script>
+{% endblock %}
+
+{% block main %}
+<main class="container-fluid position-relative" style="width:100vw; height:100vh; overflow:hidden; background-image: url('/static/image/bikachu/bg.jpg'); background-size:100% 100%;">
+    <span id="p1Score" class="position-absolute fs-1 fw-bolder" style="left:5vw; top:10vh;">0</span>
+    <span id="p2Score" class="position-absolute fs-1 fw-bolder" style="right:5vw; top:10vh;">0</span>
+    <span id="messageRow" class="position-absolute fs-1 fw-bolder start-50 translate-middle-x" style="top:10vh;"></span>
+    <span id="computerModeSign" class="position-absolute fs-3 fw-bolder" style="right:10vw; top:10vh;" hidden>ComputerMode</span>
+    <img id="net" src="/static/image/bikachu/net.png" class="position-absolute bottom-0 start-50 translate-middle-x" style="height: 25vh;">
+    <img id="ball" src="/static/image/bikachu/ball.png" class="position-absolute" style="width:10vw; bottom:60%; left:15%; z-index:2;">
+    <img id="p1" src="/static/image/bikachu/bikachu.png" class="position-absolute" style="width:10vw; bottom:0; left:15%;">
+    <img id="p2" src="/static/image/bikachu/bikachu2.png" class="position-absolute" style="width:10vw; bottom:0; right:15%;">
+</main>
+{% endblock %}

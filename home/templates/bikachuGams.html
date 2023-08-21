@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block head %}
+{{ block.super }}
+
+<script>
+    onDOMContentLoaded(() => {
+
+    });
+    // 伺服器通訊
+    function conn(func = null, stopRule = null) {
+
+        fetch(thisUrl + new URLSearchParams({})).then(response => response.text()).then(response => {
+            if (func) { func(text) }
+            console.log('connn')
+            if (!stopRule) {
+                conn()
+
+            }
+        }).catch(e => {
+            if (stopRule) { conn() }
+        })
+    }
+</script>
+
+{% endblock %}
+
+
+{% block main %}
+<main class="container-fluid">
+    <div class="row">
+
+
+    </div>
+</main>
+{% endblock %}

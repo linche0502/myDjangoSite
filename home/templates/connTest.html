@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block head %}
+{{ block.super }}
+
+<script>
+    onDOMContentLoaded(() => {
+        document.querySelector('#send').addEventListener('click', () => {
+            var params= {method: "POST", body: new FormData(document.querySelector('#testForm'))};
+            fetch(thisUrl, params).then(response => response.text()).then(response => {
+                console.log(JSON.parse(response));
+            })
+        });
+    });
+    
+    function pingTest(){
+        var thisTime= new Date();
+        var results= [];
+        console.log(thisTime);
+        function ping(count){ 
+            if(count>0){
+                fetch(`${thisUrl}?` + new URLSearchParams({ 'ping': true })).then(response => {
+                    thisTime2= new Date();
+                    console.log(count+ '\t' + (thisTime2 - thisTime) + 'ms');
+                    results.push(thisTime2 - thisTime);
+                    thisTime= thisTime2;
+                    ping(count-1);
+                })
+            }
+            else{
+                console.log('finished')
+                console.log(results);
+                console.log(results.length + '\t' + (results.reduce((a, b) => a + b, 0) / results.length))
+            }
+        }
+        ping(1000);
+    }
+</script>
+
+{% endblock %}
+
+
+{% block main %}
+<main class="container-fluid">
+    <div class="row">
+        <form class="col container-fluid" id="testForm">
+            <div class="row">
+                <input class="form-control" name="argName">
+            </div>
+            <div class="row">
+                <input class="form-control" name="argValue">
+            </div>
+            <div class="row">
+                {% csrf_token %}
+                <button type="button" class="btn btn-outline-dark w-fit" id="send">送出</button>
+            </div>
+        </form>
+        
+    </div>
+</main>
+{% endblock %}

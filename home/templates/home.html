@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+
+{% block head %}
+{{ block.super }}
+
+<script>
+    // 現有id list
+    var ids= [];
+    
+    // 檢查訊息
+    function checkMsg(){
+        fetch("/?"+ new URLSearchParams({'update':true})).then(response => response.text()).then(response => {
+            var msgs= JSON.parse(response);
+            var checkViewBottom = ((e) => { return e.scrollTop === (e.scrollHeight - e.offsetHeight)})(document.querySelector('#chatBlock').parentElement);
+            var baseline= document.querySelector("#baseline");
+            // 新增訊息
+            for(var [key,value] of Object.entries(msgs)) {
+                if(!ids.includes(key)){
+                    (function (){
+                        // 建立新元素
+                        var newMsgElement= document.createElement('div');
+                        newMsgElement.classList.add('row', 'text-break', 'align-items-center', 'ps-4', 'py-1');
+                        document.querySelector('#chatBlock').appendChild(newMsgElement);
+                        // 姓名
+                        var newMsgName= document.createElement('span');
+                        newMsgName.classList.add('fw-bold', 'fs-5', 'text-nowrap', 'w-fit', 'ms--2');
+                        newMsgName.textContent= value['name'] + ': ';
+                        newMsgElement.appendChild(newMsgName);
+                        // 訊息內容
+                        [...value['msg']].forEach(char => {
+                            var newMsgChar= document.createElement('div');
+                            newMsgChar.textContent= char;
+                            newMsgChar.classList.add('fs-6', 'w-fit', 'p-0')
+                            if(char=="\n"){ newMsgChar.classList.add('flex-break'); }
+                            newMsgElement.appendChild(newMsgChar);
+                        })
+                        // 時間
+                        var newMsgTime= document.createElement('span');
+                        newMsgTime.classList.add('fs-05', 'text-nowrap', 'w-fit', 'text-secondary', 'align-self-end', 'ms-auto');
+                        newMsgTime.textContent= value['sendTime']
+                        newMsgElement.appendChild(newMsgTime);
+                    })()
+                    ids.push(key);
+                    // 將baseline拉至最後
+                    document.querySelector('#chatBlock').appendChild(baseline);
+                }
+            }
+            // 如果原本是在滾動軸最下面，新增訊息後讓滾動軸保持在最下面
+            if(checkViewBottom){ baseline.scrollIntoView(); }
+        })
+    }
+    
+    // 送出按鈕
+    document.addEventListener("DOMContentLoaded", () => {
+        document.querySelector('#sendMsgBtn').addEventListener('click', () => {
+            var params= {method: "POST", body: new FormData(document.querySelector('#sendMsgBlock'))}
+            fetch("/", params).then(response => {
+                if(response.ok){
+                    document.querySelector("#chatMsg").value= '';
+                    checkMsg();
+                }
+                else{
+                    alert("傳送訊息失敗");
+                }
+            })
+        });
+    });
+    
+    // 設定名稱
+    var userName= getCookie('userName', {specChar:true});
+    // 初次進入時，獲得新名稱
+    if(!userName){
+        fetch("/?" + new URLSearchParams({ 'getNewName': true })).then(response => response.text()).then(response => {
+            var names= JSON.parse(response);
+            var unNameCount= names.filter((item,index,array) => { return names.includes('匿名user') }).length;
+            var newName, minNums;
+            while(true){
+                // 如果小於2位數的話，要補0
+                minNums= Math.max(Math.ceil(Math.log10(unNameCount + 10)), 2);
+                newName= '匿名user#'+ `${Math.ceil(Math.random()* Math.pow(10, minNums))}`.padStart(minNums,'0');
+                if(!names.includes(newName)){
+                    setCookie('userName', newName, {specChar:true});
+                    document.querySelector('#chatName').value = newName;
+                    break
+                }
+            }
+        })
+    }
+    
+    onDOMContentLoaded(() => {
+        // 設定姓名
+        document.querySelector('#chatName').value= userName;
+        document.querySelector('#chatName').addEventListener('change', () => {
+            setCookie('userName', document.querySelector('#chatName').value);
+        });
+        // 按Enter送出訊息
+        document.addEventListener('keydown', (event) => {
+            var chatMsgElement= document.querySelector('#chatMsg');
+            if(event.keyCode==13 && !event.shiftKey && document.activeElement==chatMsgElement && chatMsgElement.value){
+                document.querySelector('#sendMsgBtn').click();
+            }
+        })
+    })
+    
+    
+    // 進入網站檢查 & 每5秒自動更新
+    document.addEventListener("DOMContentLoaded", () => {
+        const observer = new window.IntersectionObserver(([entry]) => { checkViewBottom=entry.isIntersecting; })
+        observer.observe(document.querySelector("#baseline"))
+        checkMsg();
+        setInterval(checkMsg, 5000);
+    })
+    
+</script>
+
+{% endblock %}
+
+
+{% block main %}
+<main class="container-fluid p-0">
+    <div class="row minH-100">
+        <!-- main -->
+        <div class="col-9 container-fluid d-flex flex-column minH-100" style="min-height:100%; padding-top:10%;">
+            <div class="row">
+                <h1>Now serving on 'http://{{ ip }}'</h1>
+            </div>
+            <div class="row justify-content-between align-items-end" style="flex-grow: 1;">
+                <div class="col-auto p-0" style="width:20%; height:fit-content;">
+                    <img src="/static/image/kyaru.jpg" style="width:100%; height:auto;">
+                </div>
+                <div class="col-auto p-0" style="width:20%; height:fit-content;">
+                    <img src="/static/image/peko.jpg" style="width:100%; height:auto;">
+                </div>
+            </div>
+        </div>
+        <!-- chatroom -->
+        <div class="col-3 container-fluid d-flex flex-column border-start border-dark border-2" style="padding-top:120px; max-height:100vh;">
+            <!-- record block -->
+            <div class="row overflow-auto" style="flex-grow:1;">
+                <div class="container-fluid" id="chatBlock">
+                    <div id="baseline" class="row"></div>
+                </div>
+            </div>
+            <!-- send message block -->
+            <div class="row" style="height:20%;">
+                <form id="sendMsgBlock" class="col container-fluid bg-light border-1">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-auto d-flex align-items-center p-1">使用的名稱:</div>
+                        <div class="col p-0 pe-1"><input id="chatName" name="chatName" class="form-control" value="匿名user"></div>
+                    </div>
+                    <div class="row p-1">
+                        <textarea id="chatMsg" name="chatMsg" class="form-control my-2"></textarea>
+                    </div>
+                    <div class="row justify-content-end px-1">
+                        <button id="sendMsgBtn" type="button" class="btn btn-outline-dark w-fit">送出</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+</main>
+{% endblock %}

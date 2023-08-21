@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block head %}
+{{ block.super }}
+
+<script>
+    // 建立初始姓名
+    var userName = getCookie('userName', { specChar: true });
+    // 建立遊戲ID(唯一值，每次進入都會不同)
+    var user_id;
+    // 自己創立的房間的狀態(未建立/已建立/人滿/按下開始: null/[userName,'']/[userName,p2Name]/'start')
+    var my_room_status= null;
+    // 自己創立的房間的room_id
+    var my_room_id;
+    var other_room_join= false;
+    
+    onDOMContentLoaded(() => {
+        // 初次進入時，獲得新名稱
+        if (!userName) {
+            userName= '匿名user#'+ `${Math.ceil(Math.random()*1000)}`.padStart(3, '0');
+        }
+        // 姓名更新
+        document.querySelector('#userName').value = userName;
+        document.querySelector('#userName').addEventListener('change', () => {
+            if(document.querySelector('#userName').value){
+                setCookie('userName', document.querySelector('#userName').value);
+            }
+        });
+        
+        // 獲取本次的user_id
+        if(!user_id){
+            fetch(thisUrl+ '?'+ new URLSearchParams({'get_user_id':true, 'userName':userName})).then(response => response.text()).then(response => {
+                user_id= response;
+            });
+        }
+        
+        // 建立房間
+        var newRoom= document.querySelector('#newRoom');
+        var [newRoom_p1,newRoom_p2]= [newRoom.querySelector('[name="p1"]'), newRoom.querySelector('[name="p2"]')];
+        document.querySelector('#create_room').addEventListener('click', () => {
+            newRoom.hidden= false;
+            newRoom_p1.value= userName;
+            my_room_status= [userName,''];
+        });
+        // 取消建立房間
+        document.querySelector('#create_room_cancel').addEventListener('click', () => {
+            newRoom.hidden= true;
+            newRoom_p1.value= '';
+            newRoom_p2.value= '';
+            my_room_status= null;
+        });
+        // 交換p1,p2位置
+        newRoom_p1.addEventListener('click', () => {
+            if(newRoom_p1.value=='' && newRoom_p2.value==userName){
+                [newRoom_p1.value,newRoom_p2.value]= [userName, ''];
+                my_room_status= [userName,''];
+            }
+        });
+        newRoom_p2.addEventListener('click', () => {
+            if(newRoom_p2.value=='' && newRoom_p1.value==userName){
+                [newRoom_p1.value,newRoom_p2.value]= ['', userName];
+                my_room_status= ['', userName];
+            }
+        });
+        // 開始遊戲
+        document.querySelector('#create_room_start').addEventListener('click', () => {
+            my_room_status= 'start';
+        })
+        
+        
+    });
+    
+    
+    // 每秒檢查更新
+    setInterval(() => {
+        var params= { 'update':true, 'my_room_status':my_room_status, 'other_room_join':other_room_join };
+        fetch(thisUrl+ '?'+ new URLSearchParams(params)).then(response => response.text()).then(response => {
+            var data= JSON.parse(response);
+            // 檢查所有房間
+            var rooms= data['rooms'] || {};
+            for(var [key,value] of Object.entries(rooms)){
+                
+            }
+            // 檢查自己創立的的房間
+            
+        });
+    }, 1000);
+
+</script>
+
+{% endblock %}
+
+
+{% block main %}
+<main class="container-fluid fs-4">
+    <div class="row justify-content-center mt-5">
+        <div class="col-auto fs-2">姓名: </div>
+        <div class="col-auto"><input class="form-control" id="userName"></div>
+    </div>
+    <div class="row justify-content-center py-2">
+        <button id="create_room" type="button" class="btn btn-outline-dark w-fit">創立房間</button>
+    </div>
+    <div class="row border-top py-2" id="newRoom" hidden>
+        <div class="col">我的新房間<input type="hidden" name="thisRoom_id"></div>
+        <div class="col"><input name="p1" class="form-control" value="" readonly></div>
+        <div class="col"><input name="p2" class="form-control" value="" readonly></div>
+        <div class="col">
+            <button id="create_room_start" type="button" class="btn btn-outline-dark w-fit" disabled>開始</button>
+            <button id="create_room_cancel" type="button" class="btn btn-outline-dark w-fit">取消</button>
+        </div>
+    </div>
+    <div class="row pt-2">
+        <div class="container-fluid border-top" id="block_rooms">
+            
+        </div>
+    </div>
+    <div class="row py-2" id="room_template" hidden>
+        <div class="col"><span name="room_id"></span> 的房間</div>
+        <div class="col"><input name="p1" class="form-control" value="{{ room.p1 }}" readonly></div>
+        <div class="col"><input name="p2" class="form-control" value="{{ room.p2 }}" readonly></div>
+        <div class="col">
+            <button type="button" class="btn btn-outline-dark w-fit" name="add">加入</button>
+            <button type="button" class="btn btn-outline-dark w-fit" name="ext" disabled>退出</button>
+        </div>
+    </div>
+</main>
+{% endblock %}
