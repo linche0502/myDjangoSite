@@ -36,7 +36,6 @@ def bikachu(request):
 
 def connBikachuRooms(request):
     gammingRooms= GammingRooms()
-    # hello
     if request.GET.get('get_user_id'):
         while True:
             new_id= random.randint(10000000)
