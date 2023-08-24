@@ -1,5 +1,5 @@
 from sqlalchemy import create_engine, MetaData, Table, Column, Integer, Float, String, PrimaryKeyConstraint, select, func
-from sqlalchemy.orm import declarative_base, sessionmaker, Session
+from sqlalchemy.orm import declarative_base, sessionmaker, Session, joinedload
 import pandas as pd
 
 host, port, userName, password= 'localhost', 3306, 'root', '01234567'
@@ -70,8 +70,8 @@ def exc(cmd):
 
 # r= exc(select(Student))
 # print(r[:10], len(r[:10]))
-exc(select(Sc.__table__.columns).where(Sc.score > 60))
-
+exc(select(Sc).where(Sc.score >=60))
+exc(select(Student))
 
 
 # --------------------------------------------------------------------------------------
