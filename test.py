@@ -13,18 +13,21 @@ for fun in funs:
     fun()
 
 print('===')
-import requests
 
-reponse= requests.get('https://zh.wikipedia.org/zh-tw/Wikipedia:%E9%A6%96%E9%A1%B5')
-# print(reponse.text)
+print(f'-{1 :05d}-')
 
-import re
-text= reponse.text
-text= re.sub('<script[\\s\\S]*?>[\\s\\S]*?<\\/script>', '', text)
-text= re.sub('<style[\\s\\S]*?>[\\s\\S]*?<\\/style>', '', text)
-text= re.sub('<[^>]*>','',text)
-text= re.sub('\\s+','\n',text)
-print(text)
+# import requests
+# 
+# reponse= requests.get('https://zh.wikipedia.org/zh-tw/Wikipedia:%E9%A6%96%E9%A1%B5')
+# # print(reponse.text)
+# 
+# import re
+# text= reponse.text
+# text= re.sub('<script[\\s\\S]*?>[\\s\\S]*?<\\/script>', '', text)
+# text= re.sub('<style[\\s\\S]*?>[\\s\\S]*?<\\/style>', '', text)
+# text= re.sub('<[^>]*>','',text)
+# text= re.sub('\\s+','\n',text)
+# print(text)
 
 
 
