@@ -87,14 +87,14 @@
             // 在空中時, 要加上重力加速度
             if(position[obj][1] > 0){ speed[obj][1]-= gravity; }
             else{ speed[obj][1]= 0;}
-            // 操作部分影響到的速度
+            // 操作部分影響到的玩家速度
             if(obj=='p1' || obj=='p2'){
                 speed[obj][0]= 0;
                 if(keys[obj]['left']){ speed[obj][0]-= movementSpeed;}
                 if(keys[obj]['right']){ speed[obj][0]+= movementSpeed;}
                 if(keys[obj]['up'] && position[obj][1]==0){ speed[obj][1]+= jumpSpeed;}
             }else if(obj == 'ball'){
-                // 碰撞改變球的速度
+                // 碰撞部分改變球的速度
                 ['p1','p2'].forEach(player => {
                     // player和ball有相交時`, 先計算球的總速度，在計算彈出去的角度，以及在x.y軸上的速度分量
                     if(Math.abs(position[player][0]-position['ball'][0])<=10 && Math.abs(position[player][1]-position['ball'][1])<=10){
@@ -102,8 +102,6 @@
                         var angle= (keys[player]['down']||keys[player]['spike']||keys[player]['computerSpike']) ? Math.atan2(spikePoint[1]-position['ball'][1], spikePoint[0]-position['ball'][0]) : Math.atan2(position['ball'][1]-position[player][1], position['ball'][0]-position[player][0]);
                         speed['ball']= [V*Math.cos(angle), V*Math.sin(angle)];
                         upDateComputerPredictPoint();
-                        // 按照設定的機率來決定電腦要不要跳
-                        computerJumpDecision= Math.random() <= computerJumpRate;
                     }
                 })
                 // 觸網時，如果高於網子就依照與網子頂端(50,25)的角度回彈, 如果低於網子則單純以左右相反的速度回去
@@ -174,7 +172,7 @@
         // S= Vot + 1/2gt^2     ->           ->      t= -V +- (V^2 + 4*2g*S)^1/2  / g    
         // 1/2g*t^2 + Vot - S = 0
         // x= -b+-(b^2-4ac)^1/2  / 2a
-        // t= -Vo +- v/ (Vo^2 +2gS) / g     (-)號不合
+        // t= -Vo +- v/ (Vo^2 +2gS) / g     (-)號不合   (g為負數)
         var fallingTime= (function (Vy,y){ return (Vy + Math.sqrt(Math.pow(Vy,2) - 2*gravity*-1*y)) / gravity })(speed['ball'][1],position['ball'][1]-10);
         // 改用迴圈計算
         // var fallingTime= (function (Vy,y){ 
@@ -191,6 +189,8 @@
             if(computerPredictPoint < 0){ computerPredictPoint*= -1; }
             if(computerPredictPoint > 100){ computerPredictPoint= 100- (computerPredictPoint-100) }
         }
+        // 按照設定的機率來決定電腦要不要跳
+        computerJumpDecision = Math.random() <= computerJumpRate;
     }
     
     // 顯示訊息

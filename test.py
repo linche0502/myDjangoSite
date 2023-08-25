@@ -16,6 +16,25 @@ print('===')
 
 print(f'-{1 :05d}-')
 
+compare= lambda a,b: print(a, b, a==b)
+print('-拉丁系字母-')
+compare('þ', 'b')
+compare('ɑ', 'a')
+compare('ᴄ', 'c')
+compare('ᴏ', 'o')
+print('-西里爾字母-')
+compare('А', 'A')
+compare('а', 'a')
+compare('В', 'B')
+compare('е', 'e')
+compare('о', 'o')
+compare('Р', 'P')
+compare('р', 'p')
+compare('С', 'C')
+compare('с', 'c')
+compare('х', 'x')
+compare('ѡ', 'w')
+
 # import requests
 # 
 # reponse= requests.get('https://zh.wikipedia.org/zh-tw/Wikipedia:%E9%A6%96%E9%A1%B5')
