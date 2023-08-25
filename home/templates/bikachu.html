@@ -20,6 +20,7 @@
     var computerPredictPoint= 0;
     var computerspikeRate= 0.6;
     var computerJumpRate= 0.8;
+    var computerJumpDecision;
     var movementSpeed= 40;
     var jumpSpeed= 80;
     var regularHitSpeed= 125;
@@ -101,6 +102,8 @@
                         var angle= (keys[player]['down']||keys[player]['spike']||keys[player]['computerSpike']) ? Math.atan2(spikePoint[1]-position['ball'][1], spikePoint[0]-position['ball'][0]) : Math.atan2(position['ball'][1]-position[player][1], position['ball'][0]-position[player][0]);
                         speed['ball']= [V*Math.cos(angle), V*Math.sin(angle)];
                         upDateComputerPredictPoint();
+                        // 按照設定的機率來決定電腦要不要跳
+                        computerJumpDecision= Math.random() <= computerJumpRate;
                     }
                 })
                 // 觸網時，如果高於網子就依照與網子頂端(50,25)的角度回彈, 如果低於網子則單純以左右相反的速度回去
@@ -126,14 +129,14 @@
             // 電腦模式時
             if(computerMode && obj=='p2'){
                 // 如果球很接近電腦自己頭上, 且位置高度適中, 且球速不快, 按照設定的機率決定要不要跳
-                if(Math.abs(position['ball'][0]-position['p2'][0]) <= 10
+                if(Math.abs(position['ball'][0]-position['p2'][0]) <= 15
                     && position['ball'][1]-position['p2'][1] > 20
                     && position['ball'][1]-position['p2'][1] <= 50
-                    && Math.abs(speed['ball'][0]) <= 30
-                    && Math.random() <= computerJumpRate/(1000/freshTime)
+                    && Math.abs(speed['ball'][0]) <= 30/(1000/freshTime)
+                    && computerJumpDecision
                     && position['p2'][1]==0
                     ){ speed['p2'][1]+= jumpSpeed; }
-                // 有跳起來時, 按照設定的機率來決定是否扣球
+                // 在跳起來的瞬間, 按照設定的機率來決定是否扣球
                 if(position['p2'][1]==jumpSpeed && Math.random()<=computerspikeRate){ keys['p2']['computerSpike']=1; }
                 else if(position['p2'][1]==0){ keys['p2']['computerSpike']=0; }
                 // 如果預測落點不在p2場區，則回到開始位置
