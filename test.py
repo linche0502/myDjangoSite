@@ -35,6 +35,10 @@ compare('с', 'c')
 compare('х', 'x')
 compare('ѡ', 'w')
 
+
+
+
+
 # import requests
 # 
 # reponse= requests.get('https://zh.wikipedia.org/zh-tw/Wikipedia:%E9%A6%96%E9%A1%B5')

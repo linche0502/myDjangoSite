@@ -49,9 +49,17 @@ def connBikachuRooms(request):
     if request.GET.get('update'):
         my_room_id= request.GET.get('my_room_id')
         if my_room_id:
-            my_room= GammingRooms.getRoom(my_room_id)
+            my_room_status= request.GET.get('my_room_status',{})
+            # 自己創立的房間的狀態(未建立/已建立/人滿/按下開始: null/[[user_id,userName],'']/[[user_id,userName],[p2_user_id,p2Name]]/'start')
+            if  my_room_status == None:
+                GammingRooms.setRoom({'openingStatus': False})
+            elif type(my_room_status) == list:
+                GammingRooms.setRoom({f'{player}_{col}': my_room_status[p][c]
+                    for p,player in enumerate(['p1','p2'])
+                    for c,col in enumerate(['id','name'])
+                    if type(my_room_status[p]) == list})
             
-            
+        
             return HttpResponse('{}')
     
     
