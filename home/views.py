@@ -1,4 +1,4 @@
-from django.shortcuts import render, HttpResponse
+from django.shortcuts import render, HttpResponse, redirect
 from .models import Chat, memoryObj, GammingRooms, memoryDict, textColor
 from datetime import datetime
 import json, socket, random
@@ -41,7 +41,7 @@ def connBikachuRooms(request):
         while True:
             new_id= random.randint(0,10000000)
             if new_id not in GammingRooms.getRooms(col='creator_id'):
-                new_room_id= GammingRooms.newRoom(new_id, request.GET.get('userName',''))
+                new_room_id= GammingRooms().newRoom(new_id, request.GET.get('userName',''))
                 return HttpResponse(json.dumps({'user_id':new_id, 'room_id':new_room_id}))
     # 更新資料
     # request: room_id/my_room_status/other_room_join
@@ -54,12 +54,19 @@ def connBikachuRooms(request):
             if  my_room_status == None:
                 GammingRooms.setRoom({'openingStatus': False})
             elif type(my_room_status) == list:
-                GammingRooms.setRoom({f'{player}_{col}': my_room_status[p][c]
+                GammingRooms.setRoom({f'{player}_{col}': my_room_status[p][c] if type(my_room_status[p]) == list else ''
                     for p,player in enumerate(['p1','p2'])
-                    for c,col in enumerate(['id','name'])
-                    if type(my_room_status[p]) == list})
+                    for c,col in enumerate(['id','name'])})
+            elif my_room_status == "start":
+                my_room= GammingRooms.getRoom(my_room_id)
+                if my_room.p1_id and my_room.p2_id:
+                    return redirect(f"connBikachuGame?room_id={my_room_id}&p1={my_room.p1_id}&p2={my_room.p2_id}")
             
-        
+            # 加入別人的房間
+            if request.GET.get('other_room_join'):
+                targetRoom= GammingRooms.getRoom(request.GET.get('other_room_join'))
+                
+            
             return HttpResponse('{}')
     
     

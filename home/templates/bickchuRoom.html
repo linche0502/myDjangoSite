@@ -14,6 +14,7 @@
     var my_room_id;
     var rooms= [];
     var other_room_join= false;
+    var disconnectedCount= 0;
     
     onDOMContentLoaded(() => {
         // 初次進入時，獲得新名稱
@@ -83,6 +84,8 @@
     
     // 每秒檢查更新
     setInterval(() => {
+        // request
+        // response
         var params= { 'update':true, 'my_room_id':my_room_id, 'my_room_status':my_room_status, 'other_room_join':other_room_join };
         fetch(thisUrl+ '?'+ new URLSearchParams(params)).then(response => response.text()).then(response => {
             var data= JSON.parse(response);
@@ -93,7 +96,14 @@
             }
             // 檢查自己創立的的房間
             
+            
+            disconnectedCount= 0;
         }).catch(e => {
+            disconnectedCount+= 1;
+            if(disconnectedCount >=3){
+                alert('連線中斷, 請重新整理');
+                window.location= window.location.href;
+            }
             console.log('等待連線中...')
         })
     }, 1000);

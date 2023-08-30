@@ -1,4 +1,5 @@
 from django.db import models
+from datetime import datetime
 import ctypes
 
 # Create your models here.
@@ -22,7 +23,7 @@ class Gamming():
         self.position= {"p1":[15,0], "p2":[85,0], "ball":[15,60]}
         self.speed= {'p1':[0,0], 'p2':[0,0], 'ball':[0,0]}
         self.scores= {'p1':0, 'p2':0}
-    
+        self.lastUpdate= datetime.now()
 
 
 class GammingRooms():
@@ -38,30 +39,35 @@ class GammingRooms():
     def getCols():
         return [i for i in Gamming.__dict__.keys() if i[:1] != '_']
     @staticmethod
-    def getRoom(self, room_id):
-        return self.rooms.get('room_id')
+    def getRoom(room_id):
+        return GammingRooms.rooms.get('room_id')
     @staticmethod
-    def getRooms(self, col='*', filter={}):
+    def getRooms(col='*', filter={}):
+        # 刪除閒置(斷線)的房間
+        rooms, now= GammingRooms.rooms, datetime.now()
+        for room in rooms:
+            if (now - rooms[room].lastUpdate).second >= 5:
+                GammingRooms.delRoom(room)
         if col == '*':
-            return  self.rooms
-        return {room_id:getattr(room_id, col,'') for room_id in self.rooms}
+            return  GammingRooms.rooms
+        return {room_id:getattr(room_id, col,'') for room_id in GammingRooms.rooms}
     @staticmethod
-    # data= {self.p1_name:'abc', ...}
-    def setRoom(self, room_id, data):
+    # data= {p1_name:'abc', ...}
+    def setRoom(room_id, data):
         cols= [i for i in Gamming.__dict__.keys() if i[:1] != '_']
         for col in data:
-            if data[col] != self.rooms[room_id].get('col') and col in cols:
-                setattr(self.rooms[room_id], col, data[col])
+            if data[col] != GammingRooms.rooms[room_id].get('col') and col in cols:
+                setattr(GammingRooms.rooms[room_id], col, data[col])
     @staticmethod
-    def delRoom(self, room_id):
-        if room_id in self.rooms:
-            self.rooms.pop(room_id, '')
+    def delRoom(room_id):
+        if room_id in GammingRooms.rooms:
+            GammingRooms.rooms.pop(room_id, '')
     
     @staticmethod
     def switchPlayer(self, room_id):
-        room= self.rooms[room_id]
+        room= GammingRooms.rooms[room_id]
         if room.p1_id == '' or room.p2_id == '':
-            self.rooms[room_id].p1_id, self.rooms[room_id].p2_id= [self.rooms[room_id].p2_id, self.rooms[room_id].p1_id]
+            GammingRooms.rooms[room_id].p1_id, GammingRooms.rooms[room_id].p2_id= [GammingRooms.rooms[room_id].p2_id, GammingRooms.rooms[room_id].p1_id]
 
 
 textColor= {"default":"\033[37m", "gray":"\033[90m", "red":"\033[31m", "green":"\033[32m", "blue":"\033[34m", "yello":"\033[33m"}
