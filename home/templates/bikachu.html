@@ -104,17 +104,14 @@
                         upDateComputerPredictPoint();
                     }
                 })
-                // 觸網時，如果高於網子就依照與網子頂端(50,25)的角度回彈, 如果低於網子則單純以左右相反的速度回去
+                // 觸網時，如果高於網子就依照與網子頂端(50,25)的角度回彈, 新增: 觸網後, 球速衰減為原本的2/3
                 if(position['ball'][0]>=45 && position['ball'][0]<=55 && position['ball'][1]<=25){
-                    // 確認球是不是在網子頂部
-                    if(position['ball'][1]>=20 || position['ball'][1]>=20+speed['ball'][1]){
-                        var V= Math.sqrt(Math.pow(speed['ball'][0], 2) + Math.pow(speed['ball'][1], 2));
-                        var angle= Math.atan2(position['ball'][1]-20, position['ball'][0]-50);
-                        speed['ball']= [V * Math.cos(angle), V * Math.sin(angle)];
-                    }
-                    else{
-                        speed['ball'][0]*= -1;
-                    }
+                    var V = Math.sqrt(Math.pow(speed['ball'][0], 2) + Math.pow(speed['ball'][1], 2)) * 0.66;
+                    var angle = Math.atan2(position['ball'][1] - 20, position['ball'][0] - 50);
+                    // 如果與球網頂部的角度為負數(球比球網頂部低), 則以水平角度回彈
+                    if(angle<0 && angle>=-Math.PI/2){ angle= 0; }
+                    else if(angle<-Math.PI/2 && angle>=-Math.PI){ angle=-Math.PI; }
+                    speed['ball'] = [V * Math.cos(angle), V * Math.sin(angle)];
                     upDateComputerPredictPoint();
                 }
                 // 撞到左右牆壁時，就單純以左右相反的速度會去
