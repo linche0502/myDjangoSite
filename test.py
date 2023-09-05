@@ -40,19 +40,26 @@ compare('ѡ', 'w')
 
 import requests, json
 import pandas as pd
-response= requests.get('https://www.google.com.tw')
-import re
-text= response.text
-text= re.sub('<script[\\s\\S]*?>[\\s\\S]*?<\\/script>', '', text)
-text= re.sub('<style[\\s\\S]*?>[\\s\\S]*?<\\/style>', '', text)
-text= re.sub('<[^>]*>','',text)
-text= re.sub('\\s+','\n',text)
+# response= requests.get('https://www.google.com.tw')
+# import re
+# text= response.text
+# text= re.sub('<script[\\s\\S]*?>[\\s\\S]*?<\\/script>', '', text)
+# text= re.sub('<style[\\s\\S]*?>[\\s\\S]*?<\\/style>', '', text)
+# text= re.sub('<[^>]*>','',text)
+# text= re.sub('\\s+','\n',text)
 # print(text)
 
 
 
-data= pd.read_csv('https://www.twse.com.tw/exchangeReport/STOCK_DAY_ALL?response=open_data')
+# data= pd.read_csv('https://www.twse.com.tw/exchangeReport/STOCK_DAY_ALL?response=open_data')
 # print(data)
+
+
+import os
+os.system("cls")
+print("--")
+
+
 
 
 

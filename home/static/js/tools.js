@@ -123,6 +123,20 @@ function getUrlParams(paramName=null){
     }
 }
 
+function setUrlParams(paramName={}){
+    var url = new URL(window.location.href);
+    if(paramName){
+        return url.searchParams.get(paramName);
+    }
+    else{
+        var paramsDict= {};
+        for(var [key, value] of url.entries()){
+            paramsDict[key]= value;
+        }
+        return paramsDict;
+    }
+}
+
 function getCookie(name=null, {specChar=false}={}){
     var cookieObj= {};
     var tempCookie;
