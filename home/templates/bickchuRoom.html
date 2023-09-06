@@ -26,6 +26,7 @@
         document.querySelector('#userName').addEventListener('change', () => {
             if(document.querySelector('#userName').value){
                 setCookie('userName', document.querySelector('#userName').value);
+                
             }
         });
         
@@ -51,6 +52,7 @@
             newRoom.hidden= false;
             newRoom_p1.value= userName;
             my_room_status= [[user_id,userName],''];
+            
         });
         // 取消建立房間
         document.querySelector('#create_room_cancel').addEventListener('click', () => {
@@ -58,6 +60,7 @@
             newRoom_p1.value= '';
             newRoom_p2.value= '';
             my_room_status= null;
+            
         });
         // 交換(自己房間的)p1,p2位置
         newRoom_p1.addEventListener('click', () => {
