@@ -1,0 +1,21 @@
+{% extends "chat_base.html" %}
+
+{% block head %}
+{{ block.super }}
+
+{% endblock %}
+
+
+{% block main %}
+<main class="container-fluid">
+    <div class="row pt-5">
+        <div class="col text-center">
+            <a href="/chat/signup" class="btn btn-outline-dark w-fit">註冊</a>
+        </div>
+        <div class="col text-center">
+            <a href="/chat/login" class="btn btn-outline-dark w-fit">登入</a>
+        </div>
+    </div>
+</main>
+
+{% endblock %}

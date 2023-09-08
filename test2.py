@@ -38,7 +38,7 @@ session.headers = {
             "Referer": "https://bard.google.com/",
         }
 session.cookies.set("__Secure-1PSID", token)
-bard= Bard(token=token,session=session, timeout=30)
+bard= Bard(token=token,session=session)
 
 while True:
     text= input()

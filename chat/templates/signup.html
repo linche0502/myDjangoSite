@@ -1,0 +1,55 @@
+{% extends "chat_base.html" %}
+
+{% block head %}
+{{ block.super }}
+<style>
+    td{
+        padding-top: 1rem;
+        padding-bottom: 1rem;
+        text-align: center;
+    }
+</style>
+{% endblock %}
+
+
+{% block main %}
+<main class="container-fluid">
+    <div class="row py-4">
+        <h1 class="text-center">註冊</h1>
+    </div>
+    <form class="row justify-content-center" id="form">
+        <table class="w-fit">
+            <tr>
+                <td class="fs-4 px-3">姓名: </td>
+                <td><input class="form-control" name="name"></td>
+            </tr>
+            <tr>
+                <td class="fs-4 px-3">照片: </td>
+                <td><input class="form-control" type="file" name="img"></td>
+            </tr>
+            <tr>
+                <td colspan="2">
+                    <button class="btn btn-outline-dark" type="button" id="submit">送出</button>
+                </td>
+            </tr>
+        </table>
+        {% csrf_token %}
+    </form>
+</main>
+
+<script>
+    document.querySelector("#submit").addEventListener("click", () => {
+        var formE= document.querySelector("#form");
+        // if(formE.querySelector("[name='name']").value && formE.querySelector("[name='img']").value){
+            var params= {
+                method: "POST",
+                body: new FormData(formE)
+            };
+            fetch(window.location.pathname, params).then(reqponse => {
+                
+            });
+        // }
+        
+    });
+</script>
+{% endblock %}
