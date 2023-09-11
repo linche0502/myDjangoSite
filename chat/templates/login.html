@@ -74,16 +74,24 @@
         })
     }
     
-    function sendVideoShot(){
+    function sendVideoShot() {
+        // 調整canvas的長寬比例，以符合video串流進來的影片的長寬比
+        var aspect_ratio = video.videoWidth / video.videoHeight;
+        // 把畫質縮到大約350*250左右
+        canvas.width = 600 * aspect_ratio / (aspect_ratio + 1);
+        canvas.height = 600 * 1 / (aspect_ratio + 1);
+        // 將video上的畫面等比複製到canvas上
         canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
         // data url of the image(以編碼形式)
         var image_data_url = canvas.toDataURL('image/jpeg');
         var form = new FormData();
-        // Django要傳POST的話，必須多給個csrfmiddlewaretoken的值，才能通過Django的驗證
+        // 使用Django作為伺服器時，要傳POST的話，必須多給一個csrfmiddlewaretoken的值，才能通過Django的驗證確保安全性。flask則不需要這個步驟
         form.append("csrfmiddlewaretoken", "{{ csrf_token }}");
         form.append('imageData', image_data_url);
-        fetch(window.location.pathname, { method: "POST", body: form }).then(response => {
-            console.log(response);
+        fetch(window.location.pathname, { method: "POST", body: form }).then(response => response.json()).then(response => {
+            if (response["result"] != null) {
+                // window.location.href = "/chat/" + response["result"];
+            }
         });
     }
     // 每0.5秒像伺服器發送截圖
